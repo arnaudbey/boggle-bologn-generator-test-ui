@@ -1,0 +1,60 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <script src="bologne.js"></script>
+  </head>
+<body>
+  <div>
+    <label for="time">Temps max :</label>
+    <input type="text" id="time" value="3000"/> ms
+  </div>
+  <div>
+    <label>Formes à placer :</label> <input type="button" onclick="addword()" value="+"/>
+    <div id="words"></div>
+  </div>
+  <input type="button" onclick="generate()" value="generate"/>
+
+  <div id="result">
+  </div>
+
+  <script>
+    function addword(){
+      document.getElementById('words').insertAdjacentHTML('beforeend','<input type="text" class="word" value=""/>' );
+    }
+
+    function generate(){
+      var words = document.querySelectorAll(".word");
+      var word_list = [];
+      for (var i = words.length - 1; i >= 0; i--) {
+        word_list.push(words[i].value);
+      };
+      var results = "";
+      var time = document.getElementById("time").value;
+      var Test = Repeated(LookbackCreatorJS);
+      var risultato = new Test(4, word_list, time).run();
+      results += "<hr/><table style='text-align:center' border='1'>";
+      for (var i = risultato.grid.length - 1; i >= 0; i--) {
+        results += "<tr style='height:50px;'>";
+
+        for (var j = risultato.grid[i].length - 1; j >= 0; j--) {
+          results += "<td style='width:50px;'>";
+          results += risultato.grid[i][j];
+          results += "</td>";
+        };
+        results += "</tr>";
+      };
+      results += "</table>";
+
+      results += "<br/>";
+      results += risultato.total;
+      results += " mots/";
+      results += word_list.length;
+    
+      results += "<br/>";
+      results += risultato.candidates +" générations de grille en "+time+" ms";
+
+      document.getElementById('result').innerHTML = results;
+    }
+  </script>
+</body>
+</html>
