@@ -1,35 +1,26 @@
 'use strict';
-var Repeated = function(Test) {
-    return function(grid_side, word_list, timeout_ms){
-        var start_time = new Date().getTime();
-        
-
-        word_list = shuffleArray(word_list);
-
-
-
-
+var Generator = function(Test) {
+    return function(gridSide, wordList, timeOut){
         this.run = function() {
             var best = 0;
             var grid = [];
-            var remaining = timeout_ms;
-            var candidates = 0;
+            var remainingTime = timeOut;
+            var candidateCount = 0;
 
-            while (remaining > 0) {
+            while (remainingTime > 0) {
                 var start = new Date().getTime();
-                var candidate = new LookbackCreatorJS(grid_side, word_list, remaining).run();
-                candidates++;
-
+                wordList = shuffleArray(wordList);
+                var candidate = new LookbackCreatorJS(gridSide, wordList, remainingTime).run();
+                candidateCount++;
                 if (candidate.total > best) {
                     best = candidate.total;
                     grid = candidate.grid;
                 }
-                // subtract elapsed time for this run
-                remaining -= (new Date().getTime() - start);
+                remainingTime -= (new Date().getTime() - start);
             }
 
             return {
-                "candidates": candidates,
+                "candidateCount": candidateCount,
                 "grid": grid,
                 "total": best
             };
@@ -41,42 +32,43 @@ var Repeated = function(Test) {
 function shuffleArray(array) {
     for (var i = array.length - 1; i > 0; i--) {
         var j = Math.floor(Math.random() * (i + 1));
-        var temp = array[i];
+        var tmp = array[i];
         array[i] = array[j];
-        array[j] = temp;
+        array[j] = tmp;
     }
     return array;
 }
 
-function LookbackCreatorJS(grid_side, word_list, timeout_ms) {
-  var word_list = word_list;
-  var grid_side = grid_side;
+function LookbackCreatorJS(gridSide, wordList, timeOut) {
+  var wordList = wordList;
+  var gridSide = gridSide;
 
   var result = [];
   var inserted = [];
-  var usati = new Set();
+  var used = new Set();
   var candidate = null;
-  var usati_candidate = null;
+  var usedCandidate = null;
   var positions = [];
-  var positions_candidate = [];
+  var positionCandidate = [];
 
 
   this.run = function() {
-    var conta = 0;
+    var insertedWordCount = 0;
     var insert = false;
 
-    //create the raw output
-    for (var i1 = 0; i1 < grid_side ; i1++) {
+    // Initialize grid
+    for (var i = 0; i < gridSide ; i++) {
       var row = [];
-      for (var i2 = 0; i2 < grid_side ; i2++) {
+      for (var j = 0; j < gridSide ; j++) {
         row.push("-");
       }
       result.push(row);
     }
 
-    while (conta < word_list.length) {
-      if (insertWord(word_list[conta])) {
-        conta += 1;
+    // loop over word to insert them
+    while (insertedWordCount < wordList.length) {
+      if (insertWord(wordList[insertedWordCount])) {
+        insertedWordCount += 1;
       } else {
         break;
       }
@@ -84,63 +76,59 @@ function LookbackCreatorJS(grid_side, word_list, timeout_ms) {
 
     return {
       "grid": result,
-      "total": conta
+      "total": insertedWordCount
     };
   }
 
-  function clone(existingArray) {
-     var newObj = (existingArray instanceof Array) ? [] : {};
-     for (var i3 in existingArray) {
-        if (i3 == 'clone') continue;
-        if (existingArray[i3] && typeof existingArray[i3] == "object") {
-           newObj[i3] = clone(existingArray[i3]);
+  function clone(array) {
+     var newObj = (array instanceof Array) ? [] : {};
+     for (var i in array) {
+        if (i == 'clone') continue;
+        if (array[i] && typeof array[i] == "object") {
+           newObj[i] = clone(array[i]);
         } else {
-           newObj[i3] = existingArray[i3];
+           newObj[i] = array[i];
         }
      }
      return newObj;
   }
 
   function shuffle(array) {
-    var m = array.length, t, i4;
-
-    // While there remain elements to shuffle…
+    var m = array.length, t, i;
     while (m) {
-
-      // Pick a remaining element…
-      i4 = Math.floor(Math.random() * m--);
-
-      // And swap it with the current element.
+      i = Math.floor(Math.random() * m--);
       t = array[m];
-      array[m] = array[i4];
-      array[i4] = t;
+      array[m] = array[i];
+      array[i] = t;
     }
 
     return array;
   }
 
-  // warning: the result is reversed
-  function get_prefix(w, k) {
-    var res = "";
-    for (var i5=0; i5<k; i5++) {
-      res += w[k - i5 - 1];
+    // warning: the result is reversed
+    function getPrefix(word, k) {
+      var prefix = "";
+      for (var i=0; i<k; i++) {
+        prefix += word[k - i - 1];
+      }
+
+      return prefix;
     }
-    return res;
+
+  function getSuffix(word, k) {
+    var suffix = "";
+    for (var i=k; i<word.length; i++) {
+      suffix += word[i];
+    }
+
+    return suffix;
   }
 
-  function get_suffix(w, k) {
-    var res2 = "";
-    for (var i6=k; i6<w.length; i6++) {
-      res2 += w[i6];
-    }
-    return res2;
-  }
-
-  function get_sovrap(w) {
+  function getSubstrings(w) {
     var result = []
 
     for (var ii in inserted) {
-      var p = word_list[ii];
+      var p = wordList[ii];
       // find all common substrings of word "w" and word "p"
       for (var i=0; i<p.length; i++) {
         for (var j=0; j<w.length; j++) {
@@ -158,11 +146,11 @@ function LookbackCreatorJS(grid_side, word_list, timeout_ms) {
               // new candidate
               result.push({
                 start: inserted[ii][i],
-                start_s: get_prefix(w, j + 1),
+                start_s: getPrefix(w, j + 1),
                 end: inserted[ii][i + k],
-                end_s: get_suffix(w, j + k),
+                end_s: getSuffix(w, j + k),
                 len: k + 1,
-                usati: set,
+                used: set,
                 positions: pos1
               })
             } else {
@@ -182,87 +170,83 @@ function LookbackCreatorJS(grid_side, word_list, timeout_ms) {
   }
 
   var insertWord = function(word) {
-    var sovrap = get_sovrap(word);
-    for (var i in sovrap) {
-      var s = sovrap[i];
+    var substrings = getSubstrings(word);
+    for (var i in substrings) {
+      var substring = substrings[i];
       var positions = [];
 
-      usati = new Set(s.usati)
+      used = new Set(substring.used)
       candidate = null
       // insert first part
-      insertLetter(Math.floor(s.start / grid_side), s.start % grid_side, 0, s.start_s)
+      insertLetter(Math.floor(substring.start / gridSide), substring.start % gridSide, 0, substring.start_s)
       if (candidate !== null) {
         result = clone(candidate)
-        usati = new Set(usati_candidate)
-        positions_candidate.reverse()
-        positions_candidate.pop()
-        positions = positions.concat(positions_candidate)
-
+        used = new Set(usedCandidate)
+        positionCandidate.reverse()
+        positionCandidate.pop()
+        positions = positions.concat(positionCandidate)
         candidate = null
         // insert second part
-        insertLetter(Math.floor(s.end / grid_side), s.end % grid_side, 0, s.end_s)
+        insertLetter(Math.floor(substring.end / gridSide), substring.end % gridSide, 0, substring.end_s)
         if (candidate !== null) {
           result = clone(candidate)
-
-          positions = positions.concat(s.positions)
-          positions_candidate.shift()
-          positions = positions.concat(positions_candidate)
-
+          positions = positions.concat(substring.positions)
+          positionCandidate.shift()
+          positions = positions.concat(positionCandidate)
           inserted.push(clone(positions))
           return true
         }
       }
     }
 
-    // le sovrapposizioni non hanno aiutato, quindi provo nel modo classico
-    // e se non basta nemmeno quello ritorno false
-
-    var pos2 = [];
-    for (var i0=0; i0<grid_side; i0++) {
-      for (var j0=0; j0<grid_side; j0++) {
-        if (result[i0][j0] === "-") {
-          pos2.push({"i": i0, "j": j0})
+    // insert word without existing substring
+    var potentialCells = [];
+    for (var i=0; i<gridSide; i++) {
+      for (var j=0; j<gridSide; j++) {
+        if (result[i][j] === "-") {
+          potentialCells.push({"i": i, "j": j})
         }
       }
     }
-
-    shuffle(pos2)
+    shuffle(potentialCells);
 
     candidate = null
-    for (var k0 in pos2) {
-      var i11 = pos2[k0].i
-      var j11 = pos2[k0].j
-      insertLetter(i11, j11, 0, word)
+    for (var k in potentialCells) {
+      var i = potentialCells[k].i
+      var j = potentialCells[k].j
+      insertLetter(i, j, 0, word)
       if (candidate !== null) {
         result = clone(candidate)
-        inserted.push(clone(positions_candidate))
+        inserted.push(clone(positionCandidate))
         return true
       }
     }
     return false
   }
 
-  var insertLetter = function(x, y, count, word) {
+  var insertLetter = function(x, y, index, word) {
+    var cellId = getCellId(x,y)
     var old = result[x][y];
-    result[x][y] = word[count];
-    usati.add(x * grid_side + y);
-    positions.push(x * grid_side + y);
 
-    if (count === word.length - 1) {
+    result[x][y] = word[index];
+    used.add(cellId);
+    positions.push(cellId);
+
+    if (index === word.length - 1) {
       // a candidate was found, let's clone it
       candidate = clone(result);
-      usati_candidate = new Set(usati);
-      positions_candidate = clone(positions);
+      usedCandidate = new Set(used);
+      positionCandidate = clone(positions);
     } else {
       // list all the positions ("promising" ones first)
       var good_ones = [];
       var bad_ones = [];
-      for (var i22=-1; i22<=1; i22++) {
-        for (var j22=-1; j22<=1; j22++) {
-          if (x+i22>=0 && y+j22>=0 && x+i22<grid_side && y+j22<grid_side) {
-            var ci = x+i22;
-            var cj = y+j22;
-            if (result[ci][cj] === word[count + 1] && !usati.has(ci * grid_side + cj)) {
+      for (var i=-1; i<=1; i++) {
+        for (var j=-1; j<=1; j++) {
+          if (x+i>=0 && y+j>=0 && x+i<gridSide && y+j<gridSide) {
+            var ci = x+i;
+            var cj = y+j;
+            if (result[ci][cj] === word[index + 1] && !used.has(getCellId(ci,cj))) {
               good_ones.push({"i": ci, "j": cj})
             } else if (result[ci][cj] === "-") {
               bad_ones.push({"i": ci, "j": cj})
@@ -271,24 +255,29 @@ function LookbackCreatorJS(grid_side, word_list, timeout_ms) {
         }
       }
 
-      shuffle(good_ones)
-      shuffle(bad_ones)
-      var pos = good_ones.concat(bad_ones)
+      shuffle(good_ones);
+      shuffle(bad_ones);
+      var potentialPositions = good_ones.concat(bad_ones);
 
-      // try the positions
-      for (var k77 in pos) {
-        var i88 = pos[k77].i
-        var j88 = pos[k77].j
-        insertLetter(i88, j88, count + 1, word)
+      // try the potentialPositionsitions
+      for (var k in potentialPositions) {
+        var i = potentialPositions[k].i;
+        var j = potentialPositions[k].j;
+        insertLetter(i, j, index + 1, word);
         if (candidate !== null) {
-          break
+          break;
         }
       }
     }
 
-    result[x][y] = old
-    usati.delete(x * grid_side + y)
-    positions.pop()
+    result[x][y] = old;
+    used.delete(cellId);
+    positions.pop();
   }
+
+  var getCellId = function(x, y) {
+    return x * gridSide + y;
+  }
+
 }
 
