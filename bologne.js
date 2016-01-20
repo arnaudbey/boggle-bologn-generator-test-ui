@@ -34,9 +34,9 @@ function LookbackCreatorJS(gridSide, wordList, timeOut) {
   var result = [];
   // store letter positions for every word inserted.
   var inserted = [];
-  // store, for a word, inserted letter positions.
+  // an array. Store, for a word, inserted letter positions.
   var positions = [];
-
+  // a set (uniq values). store, for a word, inserted letter positions.
   var used = new Set();
   var candidate = null;
   var usedCandidate = null;
@@ -76,30 +76,29 @@ function LookbackCreatorJS(gridSide, wordList, timeOut) {
     var wordLen = word.length;
 
     // loop over inserted words
-    for (var ii in inserted) {
-      var word2 = wordList[ii];
+    for (var index in inserted) {
+      var word2 = wordList[index];
+      var word2LetterPositions = inserted[index];
       var word2Len = word2.length;
       for (var i=0; i<word2Len; i++) {
         for (var j=0; j<wordLen; j++) {
           for (var k=0; i+k<word2Len && j+k<wordLen; k++) {
             if (word[j + k] === word2[i + k]) {
-              var set = new Set();
+              var usedPositions = new Set();
+              var usedPositionsArray = [];
               for (var kk=0; kk<=k; kk++) {
-                set.add(inserted[ii][i + kk]);
-              }
-              var pos1 = [];
-              for (var kk=0; kk<=k; kk++) {
-                pos1.push(inserted[ii][i + kk])
+                usedPositions.add(word2LetterPositions[i + kk]);
+                usedPositionsArray.push(word2LetterPositions[i + kk])
               }
 
               substrings.push({
-                start: inserted[ii][i],
+                start: word2LetterPositions[i],
                 start_s: getPrefix(word, j + 1),
-                end: inserted[ii][i + k],
+                end: word2LetterPositions[i + k],
                 end_s: getSuffix(word, j + k),
                 len: k + 1,
-                used: set,
-                positions: pos1
+                used: usedPositions,
+                positions: usedPositionsArray
               })
             } else {
               break
@@ -128,25 +127,16 @@ function LookbackCreatorJS(gridSide, wordList, timeOut) {
   }
 
   var insertClassical = function(word){
-    var potentialCells = [];
-    for (var i=0; i<gridSide; i++) {
-      for (var j=0; j<gridSide; j++) {
-        if (isFree(i,j)) {
-          potentialCells.push({"i": i, "j": j})
-        }
-      }
-    }
-    shuffle(potentialCells);
-
-    candidate = null
-    for (var k in potentialCells) {
-      var i = potentialCells[k].i
-      var j = potentialCells[k].j
-      insertLetter(i, j, 0, word)
+    var freeCells = getFreeCells();
+    candidate = null;
+    for (var k in freeCells) {
+      var i = freeCells[k].i;
+      var j = freeCells[k].j;
+      insertLetter(i, j, 0, word);
       if (candidate !== null) {
-        result = clone(candidate)
-        inserted.push(clone(positionCandidate))
-        return true
+        result = clone(candidate);
+        inserted.push(clone(positionCandidate));
+        return true;
       }
     }
   }
@@ -158,7 +148,7 @@ function LookbackCreatorJS(gridSide, wordList, timeOut) {
     for (var i in substrings) {
       var substring = substrings[i];
       var positions = [];
-      used = new Set(substring.used)
+      used = new Set(substring.used);
       candidate = null
       // insert first part of word
       insertLetter(Math.floor(substring.start / gridSide), substring.start % gridSide, 0, substring.start_s)
@@ -189,7 +179,6 @@ function LookbackCreatorJS(gridSide, wordList, timeOut) {
   var insertLetter = function(x, y, index, word) {
     var cellId = getCellId(x,y)
     var old = result[x][y];
-
     result[x][y] = word[index];
     used.add(cellId);
     positions.push(cellId);
@@ -201,8 +190,7 @@ function LookbackCreatorJS(gridSide, wordList, timeOut) {
       positionCandidate = clone(positions);
     } else {
       var potentialPositions = getNextLetterPotentialPositions(x, y, index, word);
-
-      // try the potentialPosition
+      // try the potential positions
       for (var k in potentialPositions) {
         var i = potentialPositions[k].i;
         var j = potentialPositions[k].j;
@@ -228,6 +216,7 @@ function LookbackCreatorJS(gridSide, wordList, timeOut) {
         if (x+i>=0 && y+j>=0 && x+i<gridSide && y+j<gridSide) {
           var ci = x+i;
           var cj = y+j;
+          // check if next po
           if (result[ci][cj] === word[index + 1] && !used.has(getCellId(ci,cj))) {
             good_ones.push({"i": ci, "j": cj})
           } else if (isFree(ci,cj)) {
@@ -298,5 +287,20 @@ function LookbackCreatorJS(gridSide, wordList, timeOut) {
     }
 
     return false;
+  }
+
+  function getFreeCells()
+  {
+    var freeCells = [];
+    for (var i=0; i<gridSide; i++) {
+      for (var j=0; j<gridSide; j++) {
+        if (isFree(i,j)) {
+          freeCells.push({"i": i, "j": j});
+        }
+      }
+    }
+    shuffle(freeCells);
+
+    return freeCells;
   }
 }
