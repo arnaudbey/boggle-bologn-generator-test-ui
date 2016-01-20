@@ -1,7 +1,10 @@
+<!doctype html>
 <html>
   <head>
     <meta charset="UTF-8">
     <script src="bologne.js"></script>
+    <script src="script.js"></script>
+    <link href="style.css" rel="stylesheet" media="all" type="text/css"> 
   </head>
 <body>
   <div>
@@ -9,55 +12,12 @@
     <input type="text" id="time" value="3000"/> ms
   </div>
   <div>
-    <label>Formes à placer :</label> <input type="button" onclick="addword()" value="+"/>
+    <label>Formes à placer :</label> <input type="button" onclick="addword()" value="Ajouter une forme"/>
     <div id="words"></div>
   </div>
-  <input type="button" onclick="generate()" value="generate"/>
-
+  <input type="button" onclick="generate()" value="Générer grille"/>
+  <hr/>
   <div id="result">
   </div>
-
-  <script>
-    function addword(){
-      document.getElementById('words').insertAdjacentHTML('beforeend','<input type="text" class="word" value=""/>' );
-    }
-
-    function generate(){
-      var words = document.querySelectorAll(".word");
-      var word_list = [];
-      for (var i = words.length - 1; i >= 0; i--) {
-        word_list.push(words[i].value);
-      };
-      var results = "";
-      var time = document.getElementById("time").value;
-      var generator = Generator();
-      var best = new generator(4, word_list, time).run();
-
-
-      
-      results += "<hr/><table style='text-align:center' border='1'>";
-      for (var i = best.grid.length - 1; i >= 0; i--) {
-        results += "<tr style='height:50px;'>";
-
-        for (var j = best.grid[i].length - 1; j >= 0; j--) {
-          results += "<td style='width:50px;'>";
-          results += best.grid[i][j];
-          results += "</td>";
-        };
-        results += "</tr>";
-      };
-      results += "</table>";
-
-      results += "<br/>";
-      results += best.total;
-      results += " mots/";
-      results += word_list.length;
-    
-      results += "<br/>";
-      results += best.candidateCount +" générations de grille en "+time+" ms";
-
-      document.getElementById('result').innerHTML = results;
-    }
-  </script>
 </body>
 </html>
